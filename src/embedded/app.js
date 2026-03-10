@@ -3,8 +3,16 @@ let servers = [];
 
 // --- Helpers ---
 
+function getHostIp() {
+    const host = window.location.hostname;
+    if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) return host;
+    const match = host.match(/^ec2-(\d+-\d+-\d+-\d+)\./);
+    if (match) return match[1].replace(/-/g, '.');
+    return host;
+}
+
 function getServerUrl(port) {
-    return `${window.location.protocol}//${window.location.hostname}:${port}`;
+    return `${window.location.protocol}//${getHostIp()}:${port}`;
 }
 
 async function copyUrl(port) {
