@@ -1,6 +1,51 @@
 const API = '/api/servers';
 let servers = [];
 
+// --- Helpers ---
+
+function getServerUrl(port) {
+    return `${window.location.protocol}//${window.location.hostname}:${port}`;
+}
+
+async function copyUrl(port) {
+    const url = getServerUrl(port);
+    try {
+        await navigator.clipboard.writeText(url);
+        showToast('Copied: ' + url);
+    } catch {
+        // Fallback for non-HTTPS contexts
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('Copied: ' + url);
+    }
+}
+
+function navigateToServer(port) {
+    window.open(getServerUrl(port), '_blank');
+}
+
+function showToast(message) {
+    // Remove existing toast
+    const old = document.querySelector('.toast');
+    if (old) old.remove();
+
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 2000);
+}
+
 // --- API calls ---
 
 async function fetchServers() {
@@ -56,6 +101,58 @@ async function setMode(id, mode) {
     fetchServers();
 }
 
+// --- Bulk actions ---
+
+async function createTestServers() {
+    const names = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta', 'Theta', 'Iota', 'Kappa'];
+    const btn = document.getElementById('btn-create-test');
+    btn.disabled = true;
+    btn.textContent = 'Creating...';
+
+    let created = 0;
+    for (let i = 0; i < 10; i++) {
+        const port = 8011 + i;
+        const res = await fetch(API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: `test-${names[i]}`,
+                port,
+                http_status_code: 200,
+                html_title: `Test Server ${names[i]}`,
+            }),
+        });
+        if (res.ok) created++;
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Create 10 Test';
+    showToast(`Created ${created} test server(s)`);
+    fetchServers();
+}
+
+async function deleteTestServers() {
+    const testServers = servers.filter(s => s.name.startsWith('test-'));
+    if (testServers.length === 0) {
+        showToast('No test servers to delete');
+        return;
+    }
+    if (!confirm(`Delete ${testServers.length} test server(s)?`)) return;
+
+    const btn = document.getElementById('btn-delete-test');
+    btn.disabled = true;
+    btn.textContent = 'Deleting...';
+
+    for (const s of testServers) {
+        await fetch(`${API}/${s.id}`, { method: 'DELETE' });
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Delete Test Servers';
+    showToast(`Deleted ${testServers.length} test server(s)`);
+    fetchServers();
+}
+
 // --- Rendering ---
 
 const MODE_LABELS = {
@@ -84,6 +181,7 @@ function render() {
         .sort((a, b) => a.port - b.port)
         .map(s => {
             const modeClass = `mode-${s.status}`;
+            const url = getServerUrl(s.port);
             return `
             <div class="server-card ${modeClass}">
                 <div class="card-top">
@@ -95,11 +193,14 @@ function render() {
                             <span>Title: <strong>${esc(s.html_title)}</strong></span>
                             ${s.response_delay_ms > 0 ? `<span>Delay: <strong>${s.response_delay_ms}ms</strong></span>` : ''}
                         </div>
+                        <div class="card-url">${esc(url)}</div>
                     </div>
                     <div class="card-actions">
                         <span class="status-badge ${s.status}">${MODE_DISPLAY[s.status]}</span>
-                        <button class="btn" onclick="openEdit('${s.id}')">Edit</button>
-                        <button class="btn btn-danger" onclick="deleteServer('${s.id}')">Delete</button>
+                        <button class="btn btn-small" onclick="copyUrl(${s.port})" title="Copy URL">Copy</button>
+                        <button class="btn btn-small" onclick="navigateToServer(${s.port})" title="Open in browser">Navigate</button>
+                        <button class="btn btn-small" onclick="openEdit('${s.id}')">Edit</button>
+                        <button class="btn btn-small btn-danger" onclick="deleteServer('${s.id}')">Delete</button>
                     </div>
                 </div>
                 <div class="mode-buttons">
@@ -159,6 +260,8 @@ function closeModal() {
 // --- Event Listeners ---
 
 document.getElementById('btn-add').addEventListener('click', openAdd);
+document.getElementById('btn-create-test').addEventListener('click', createTestServers);
+document.getElementById('btn-delete-test').addEventListener('click', deleteTestServers);
 document.getElementById('modal-close').addEventListener('click', closeModal);
 document.getElementById('btn-cancel').addEventListener('click', closeModal);
 

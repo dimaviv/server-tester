@@ -83,6 +83,27 @@ header h1 {
     background: rgba(239, 68, 68, 0.1);
 }
 
+.btn-success {
+    background: var(--green);
+    border-color: var(--green);
+    color: white;
+}
+
+.btn-success:hover {
+    background: #16a34a;
+}
+
+.btn-small {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
 main {
     padding: 1.5rem 2rem;
     display: grid;
@@ -135,6 +156,13 @@ main {
     display: flex;
     align-items: center;
     gap: 0.25rem;
+}
+
+.card-url {
+    margin-top: 0.35rem;
+    font-size: 0.8rem;
+    color: var(--blue);
+    font-family: monospace;
 }
 
 .card-actions {
@@ -259,6 +287,29 @@ main {
     justify-content: flex-end;
     gap: 0.75rem;
     margin-top: 1.25rem;
+}
+
+/* Toast */
+.toast {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(1rem);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.5rem;
+    font-size: 0.85rem;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: 200;
+    pointer-events: none;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
 }
 
 /* Responsive */
